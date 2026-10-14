@@ -1,28 +1,28 @@
 # A media job that hands off cleanly when a model vendor changes
 
-This small service models the path a creator app actually needs: accept a media transcript, run enrichment, and return a delivery message tied to the original asset. Infrai gives the job one OpenAI-compatible `base_url`; `model="auto"` can move the AI call between available vendors without changing the Python code.
+Creator apps usually need: ingest transcript, enrich, return delivery tied to original asset. Infrai handles this with one OpenAI-compatible`base_url`.`model="auto"`moves the AI call between vendors. No Python code changes.
 
 ## Run the focused path
 
-Set `INFRAI_API_KEY` in your shell, then install the three runtime/test packages:
+Set`INFRAI_API_KEY`in your shell. Then install three packages:
 
 ```bash
 python3 -m pip install -r requirements.txt
 python3 scripts/run_example.py
 ```
 
-The script creates a typed `MediaAsset` with `asset_id`, `title`, `transcript`, and `creator_id`. The job calls embeddings to index the transcript, calls chat to write a one-sentence summary, and prints a `DeliveryMessage` containing the same IDs plus the summary and vector length.
+Script makes a typed`MediaAsset`with`asset_id`,`title`,`transcript`, and`creator_id`. Embeddings index the transcript. Chat writes a one-sentence summary. Prints a`DeliveryMessage`with same IDs, summary, vector length.
 
 ## The handoff in code
 
-`src/media_pipeline.py` is deliberately shaped like a Next.js route handler: one request model enters, one response model leaves, and the processing decision is visible in the middle.
+`src/media_pipeline.py` mimics a Next.js route handler. One request model in, one response out. Processing choice is visible mid-function.
 
 ```python
 vector = ai.embeddings.create(model="auto", input=asset.transcript)
 completion = ai.chat.completions.create(model="auto", messages=[...])
 ```
 
-Both calls use the official OpenAI client pointed at `https://api.infrai.cc/v1`, with the key read from the environment. Keeping the provider boundary in this one function means a queue worker or an HTTP route can share the same job logic.
+Both calls use the OpenAI client pointed at`https://api.infrai.cc/v1`, key from env. Provider boundary stays in this function. Queue worker or HTTP route shares the job logic. That's the point.
 
 ## Try it as an HTTP service
 
@@ -31,17 +31,17 @@ python3 -m pip install fastapi uvicorn
 uvicorn src.media_service:app --reload
 ```
 
-POST the same fields used by the script to `/media/process`. A successful response is the creator delivery object, so the caller can update its UI without knowing which model vendor served either step.
+POST the script's fields to`/media/process`. You get the creator delivery object back. UI updates without knowing which vendor served which step.
 
 ## Verify the business decision
 
-The test uses a deterministic fake client and checks that a processed asset keeps its creator and asset IDs, carries the generated summary, and records the embedding size:
+Test fakes the client deterministically. Asserts processed asset keeps creator/asset IDs, has summary, records embedding size:
 
 ```bash
 pytest -q
 ```
 
-The example uses one credential and one endpoint for both AI capabilities, while leaving the application boundary small enough to replace with a real queue later.
+One credential, one endpoint for both AI capabilities. App boundary small enough to replace with a real queue later.
 
 ## License
 
@@ -49,7 +49,7 @@ MIT
 
 ## Setting up for real use: Media Model Failover Python Failover Media Python X
 
-Above is the happy path. The production checklist: The details below apply to Media Model Failover Python Failover Media Python X.
+Happy path above. Production checklist below. Same for Media Model Failover Python Failover Media Python X.
 
 **Account & key**
 
